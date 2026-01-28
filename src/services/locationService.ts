@@ -2,6 +2,7 @@ import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
 import { registerPlugin } from '@capacitor/core';
 import type { BackgroundGeolocationPlugin } from '@capacitor-community/background-geolocation';
+import LiveActivity from '../plugins/LiveActivityPlugin';
 
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
 
@@ -177,6 +178,13 @@ export const initTracking = async (
           locationUpdateCallback(locationPoint);
         }
 
+        // Update Live Activity with current count
+        if (platform === 'ios') {
+          getLocationCount().then((count) =>
+            LiveActivity.updateLiveActivity({ locationCount: count }).catch(() => {})
+          );
+        }
+
         console.log(`✅ [${platform}-timer] Location saved at ${locationPoint.dateString}`);
       } else {
         console.log('⏳ Waiting for first location...');
@@ -184,6 +192,14 @@ export const initTracking = async (
     }, TRACKING_INTERVAL_MS);
 
     isInitialized = true;
+
+    // Start Live Activity (iOS Dynamic Island green dot)
+    if (platform === 'ios') {
+      LiveActivity.startLiveActivity().catch((err) =>
+        console.warn('Live Activity not available:', err)
+      );
+    }
+
     console.log(`🚀 [${platform}] Location tracking started - ${TRACKING_INTERVAL_MS / 1000}s intervals`);
     return true;
   } catch (error) {
